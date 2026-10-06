@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PDF Toolbox</title>
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+*{box-sizing:border-box}
+body{
+    margin:0;
+    font-family:Segoe UI,Arial,sans-serif;
+    background:linear-gradient(135deg,#10051f,#1b0b35,#0b1025);
+    color:#fff;
+    min-height:100vh;
+}
+header{
+    padding:28px 20px 18px;
+    text-align:center;
+}
+h1{
+    margin:0;
+    font-size:34px;
+    letter-spacing:1px;
+}
+.subtitle{opacity:.7;margin-top:7px}
+.container{max-width:1100px;margin:auto;padding:20px}
+.grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:18px;
+}
+.card{
+    background:rgba(255,255,255,.08);
+    border:1px solid rgba(255,255,255,.14);
+    border-radius:20px;
+    padding:22px;
+    cursor:pointer;
+    transition:.2s;
+    backdrop-filter:blur(12px);
+}
+.card:hover{transform:translateY(-4px);background:rgba(255,255,255,.13)}
+.icon{font-size:34px}
+.card h2{font-size:19px;margin:12px 0 7px}
+.card p{font-size:13px;opacity:.7;margin:0;line-height:1.5}
+.panel{
+    display:none;
+    margin-top:24px;
+    background:rgba(255,255,255,.08);
+    border:1px solid rgba(255,255,255,.14);
+    border-radius:20px;
+    padding:24px;
+}
+.panel.active{display:block}
+.drop{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    width:100%;
+    min-height:150px;
+    padding:28px 20px;
+    border:1px solid rgba(255,255,255,.12);
+    border-radius:16px;
+    background:rgba(255,255,255,.035);
+    text-align:center;
+    cursor:pointer;
+    overflow:hidden;
+}
+.drop.drag{
+    border-color:rgba(183,108,255,.75);
+    background:rgba(183,108,255,.10);
+}
+.drop *{
+    max-width:100%;
+}
+input[type=file]{display:none}
+button{
+    border:0;
+    border-radius:12px;
+    padding:12px 18px;
+    background:#8d45e8;
+    color:white;
+    font-weight:600;
+    cursor:pointer;
+    margin:6px 4px 0 0;
+}
+button:hover{background:#a65cff}
+.secondary{background:rgba(255,255,255,.12)}
+input[type=text],input[type=password],select{
+    width:100%;
+    padding:12px;
+    margin:10px 0;
+    border:1px solid rgba(255,255,255,.18);
+    border-radius:10px;
+    background:rgba(0,0,0,.25);
+    color:white;
+}
+.filelist{
+    margin-top:16px;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    width:100%;
+}
+.file{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto;
+    align-items:center;
+    gap:14px;
+    width:100%;
+    min-height:44px;
+    margin:0;
+    padding:10px 13px;
+    border-radius:10px;
+    background:rgba(0,0,0,.18);
+    font-size:14px;
+    line-height:1.35;
+    overflow:hidden;
+}
+.file span:first-child{
+    min-width:0;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    text-align:left;
+}
+.file span:last-child{
+    white-space:nowrap;
+    opacity:.65;
+    text-align:right;
+}
+.status{
+    margin-top:15px;
+    padding:12px;
+    border-radius:10px;
+    background:rgba(0,0,0,.22);
+    min-height:20px;
+}
+.note{font-size:12px;opacity:.65;line-height:1.5;margin-top:12px}
+footer{text-align:center;padding:30px;opacity:.45;font-size:12px}
+</style>
+</head>
+<body>
+
+<header>
+<h1>📄 PDF Toolbox</h1>
+<div class="subtitle">Fast browser-based PDF utilities • Files stay on your device</div>
+</header>
+
+<div class="container">
+
+<div class="grid">
+<div class="card" onclick="openTool('merge')"><div class="icon">📑</div><h2>Merge PDFs</h2><p>Combine multiple PDF files into one.</p></div>
+<div class="card" onclick="openTool('split')"><div class="icon">✂️</div><h2>Split PDF</h2><p>Split every page into separate PDFs.</p></div>
+<div class="card" onclick="openTool('extract')"><div class="icon">📄</div><h2>Extract Pages</h2><p>Extract selected pages or ranges.</p></div>
+<div class="card" onclick="openTool('compress')"><div class="icon">🗜️</div><h2>Compress PDF</h2><p>Rebuild the PDF with basic optimization.</p></div>
+<div class="card" onclick="openTool('img2pdf')"><div class="icon">🖼️</div><h2>Images → PDF</h2><p>Turn JPG, PNG and other images into a PDF.</p></div>
+<div class="card" onclick="openTool('pdf2img')"><div class="icon">📸</div><h2>PDF → Images</h2><p>Render PDF pages as PNG images.</p></div>
+<div class="card" onclick="openTool('watermark')"><div class="icon">💧</div><h2>Add Watermark</h2><p>Add text watermark to every page.</p></div>
+<div class="card" onclick="openTool('protect')"><div class="icon">🔐</div><h2>Protect PDF</h2><p>Browser password encryption is not enabled in this build.</p></div>
+</div>
+
+<div id="panel" class="panel">
+<h2 id="title"></h2>
+<div id="body"></div>
+<div id="status" class="status"></div>
+<button class="secondary" onclick="closeTool()">← Back</button>
+</div>
+
+</div>
+
+<footer>PDF Toolbox • Processing is performed locally in your browser where supported.</footer>
+
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+const { PDFDocument, rgb, degrees } = PDFLib;
+let current = "";
+let selected = [];
+
+function openTool(tool){
+    current=tool;
+    selected=[];
+    const panel=document.getElementById("panel");
+    const title=document.getElementById("title");
+    const body=document.getElementById("body");
+    const status=document.getElementById("status");
+    panel.classList.add("active");
+    status.textContent="";
+    body.innerHTML="";
+
+    const titles={
+        merge:"📑 Merge PDFs",
+        split:"✂️ Split PDF",
+        extract:"📄 Extract Pages",
+        compress:"🗜️ Compress PDF",
+        img2pdf:"🖼️ Images → PDF",
+        pdf2img:"📸 PDF → Images",
+        watermark:"💧 Add Watermark",
+        protect:"🔐 Protect PDF"
+    };
+    title.textContent=titles[tool];
+
+    if(tool==="protect"){
+        body.innerHTML=`
+        <p>This browser-only version cannot create true password-encrypted PDF files.</p>
+        <div class="note">For security-sensitive PDF encryption, use a dedicated PDF application. Your files are not uploaded by this page.</div>`;
+        return;
+    }
+
+    let accept = tool==="img2pdf" ? "image/*" : ".pdf,application/pdf";
+    let multiple = ["merge","img2pdf"].includes(tool) ? "multiple" : "";
+
+    body.innerHTML=`
+      <label class="drop" id="drop">
+        <div style="font-size:32px">📂</div>
+        <b>Click to choose file${multiple?'s':''}</b>
+        <div class="note">or drag and drop here</div>
+        <input id="fileInput" type="file" accept="${accept}" ${multiple}>
+      </label>
+      <div id="filelist" class="filelist"></div>
+      <div id="controls"></div>`;
+
+    const input=document.getElementById("fileInput");
+    const drop=document.getElementById("drop");
+    input.onchange=e=>setFiles([...e.target.files]);
+    drop.ondragover=e=>{e.preventDefault();drop.classList.add("drag")};
+    drop.ondragleave=()=>drop.classList.remove("drag");
+    drop.ondrop=e=>{
+        e.preventDefault();
+        drop.classList.remove("drag");
+        setFiles([...e.dataTransfer.files]);
+    };
+
+    if(tool==="extract"){
+        document.getElementById("controls").innerHTML=`
+        <input id="pages" type="text" placeholder="Pages e.g. 1,3,5-8">
+        <button onclick="extractPages()">Extract & Download</button>`;
+    }
+    if(tool==="watermark"){
+        document.getElementById("controls").innerHTML=`
+        <input id="watermarkText" type="text" placeholder="Watermark text">
+        <button onclick="watermarkPDF()">Add Watermark & Download</button>`;
+    }
+    if(tool==="merge"){
+        document.getElementById("controls").innerHTML=
+        `<button onclick="mergePDFs()">Merge & Download</button>`;
+    }
+    if(tool==="split"){
+        document.getElementById("controls").innerHTML=
+        `<button onclick="splitPDF()">Split & Download ZIP</button>`;
+    }
+    if(tool==="compress"){
+        document.getElementById("controls").innerHTML=
+        `<button onclick="compressPDF()">Optimize & Download</button>`;
+    }
+    if(tool==="img2pdf"){
+        document.getElementById("controls").innerHTML=
+        `<button onclick="imagesToPDF()">Create PDF & Download</button>`;
+    }
+    if(tool==="pdf2img"){
+        document.getElementById("controls").innerHTML=
+        `<button onclick="pdfToImages()">Convert & Download ZIP</button>`;
+    }
+}
+
+function closeTool(){
+    document.getElementById("panel").classList.remove("active");
+    current="";
+}
+
+function setFiles(files){
+    selected=files;
+    const list=document.getElementById("filelist");
+    list.innerHTML="";
+    selected.forEach((f,i)=>{
+        const div=document.createElement("div");
+        div.className="file";
+        div.innerHTML=`<span>${i+1}. ${escapeHtml(f.name)}</span><span>${formatSize(f.size)}</span>`;
+        list.appendChild(div);
+    });
+}
+
+function escapeHtml(s){
+    return s.replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
+}
+
+function formatSize(n){
+    if(n<1024)return n+" B";
+    if(n<1024*1024)return (n/1024).toFixed(1)+" KB";
+    return (n/1024/1024).toFixed(1)+" MB";
+}
+
+function msg(t){
+    document.getElementById("status").textContent=t;
+}
+
+function downloadBlob(blob,name){
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);
+    a.download=name;
+    a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href),3000);
+}
+
+async function mergePDFs(){
+    if(!selected.length)return msg("Choose at least one PDF.");
+    msg("Merging...");
+    const out=await PDFDocument.create();
+    for(const file of selected){
+        const bytes=await file.arrayBuffer();
+        const src=await PDFDocument.load(bytes);
+        const pages=await out.copyPages(src,src.getPageIndices());
+        pages.forEach(p=>out.addPage(p));
+    }
+    const bytes=await out.save();
+    downloadBlob(new Blob([bytes],{type:"application/pdf"}),"merged.pdf");
+    msg("Done.");
+}
+
+async function splitPDF(){
+    if(selected.length!==1)return msg("Choose one PDF.");
+    msg("Splitting...");
+    const src=await PDFDocument.load(await selected[0].arrayBuffer());
+    const zip=new JSZip();
+    for(let i=0;i<src.getPageCount();i++){
+        const out=await PDFDocument.create();
+        const [p]=await out.copyPages(src,[i]);
+        out.addPage(p);
+        zip.file(`page-${i+1}.pdf`,await out.save());
+    }
+    downloadBlob(await zip.generateAsync({type:"blob"}),"split-pages.zip");
+    msg("Done. ZIP downloaded.");
+}
+
+function parsePages(s,total){
+    const result=[];
+    for(const part of s.replace(/\s/g,"").split(",")){
+        if(part.includes("-")){
+            let [a,b]=part.split("-").map(Number);
+            if(a>b)[a,b]=[b,a];
+            for(let i=a;i<=b;i++)if(i>=1&&i<=total)result.push(i-1);
+        }else{
+            const n=Number(part);
+            if(n>=1&&n<=total)result.push(n-1);
+        }
+    }
+    return [...new Set(result)];
+}
+
+async function extractPages(){
+    if(selected.length!==1)return msg("Choose one PDF.");
+    const text=document.getElementById("pages").value;
+    const src=await PDFDocument.load(await selected[0].arrayBuffer());
+    const ids=parsePages(text,src.getPageCount());
+    if(!ids.length)return msg("Enter valid pages.");
+    const out=await PDFDocument.create();
+    const pages=await out.copyPages(src,ids);
+    pages.forEach(p=>out.addPage(p));
+    downloadBlob(new Blob([await out.save()],{type:"application/pdf"}),"extracted-pages.pdf");
+    msg("Done.");
+}
+
+async function compressPDF(){
+    if(selected.length!==1)return msg("Choose one PDF.");
+    msg("Optimizing PDF...");
+    const src=await PDFDocument.load(await selected[0].arrayBuffer(),{updateMetadata:false});
+    const bytes=await src.save({useObjectStreams:true,addDefaultPage:false});
+    downloadBlob(new Blob([bytes],{type:"application/pdf"}),"optimized.pdf");
+    msg("Done. Note: browser optimization cannot guarantee a smaller file.");
+}
+
+async function imagesToPDF(){
+    if(!selected.length)return msg("Choose images.");
+    msg("Creating PDF...");
+    const out=await PDFDocument.create();
+    for(const file of selected){
+        const bytes=new Uint8Array(await file.arrayBuffer());
+        let img;
+        if(file.type==="image/png") img=await out.embedPng(bytes);
+        else img=await out.embedJpg(bytes);
+        const page=out.addPage([img.width,img.height]);
+        page.drawImage(img,{x:0,y:0,width:img.width,height:img.height});
+    }
+    downloadBlob(new Blob([await out.save()],{type:"application/pdf"}),"images.pdf");
+    msg("Done.");
+}
+
+async function pdfToImages(){
+    if(selected.length!==1)return msg("Choose one PDF.");
+    msg("Rendering pages...");
+    const pdf=await pdfjsLib.getDocument({data:await selected[0].arrayBuffer()}).promise;
+    const zip=new JSZip();
+    for(let i=1;i<=pdf.numPages;i++){
+        const page=await pdf.getPage(i);
+        const viewport=page.getViewport({scale:2});
+        const canvas=document.createElement("canvas");
+        canvas.width=viewport.width;
+        canvas.height=viewport.height;
+        await page.render({canvasContext:canvas.getContext("2d"),viewport}).promise;
+        const blob=await new Promise(r=>canvas.toBlob(r,"image/png"));
+        zip.file(`page-${i}.png`,blob);
+    }
+    downloadBlob(await zip.generateAsync({type:"blob"}),"pdf-images.zip");
+    msg("Done. ZIP downloaded.");
+}
+
+async function watermarkPDF(){
+    if(selected.length!==1)return msg("Choose one PDF.");
+    const text=document.getElementById("watermarkText").value.trim();
+    if(!text)return msg("Enter watermark text.");
+    msg("Adding watermark...");
+    const doc=await PDFDocument.load(await selected[0].arrayBuffer());
+    for(const page of doc.getPages()){
+        const {width,height}=page.getSize();
+        page.drawText(text,{
+            x:width/2-80,
+            y:height/2,
+            size:34,
+            color:rgb(.55,.55,.55),
+            opacity:.35,
+            rotate:degrees(45)
+        });
+    }
+    downloadBlob(new Blob([await doc.save()],{type:"application/pdf"}),"watermarked.pdf");
+    msg("Done.");
+}
+</script>
+</body>
+</html>
